@@ -15,37 +15,31 @@ export function CustomCursor() {
     let hideTimeout: NodeJS.Timeout;
 
     const handleMouseMove = (e: MouseEvent) => {
-      // Throttle with requestAnimationFrame
-      if (rafIdRef.current) return;
-
-      rafIdRef.current = requestAnimationFrame(() => {
-        setPosition({ x: e.clientX, y: e.clientY });
-        setIsVisible(true);
-        
-        // Clear any existing hide timeout
-        clearTimeout(hideTimeout);
-        
-        // Hide cursor after 1 second of no movement
-        hideTimeout = setTimeout(() => {
-          setIsVisible(false);
-        }, 1000);
-        
-        // Create trail particle with unique ID
-        const particle = {
-          id: ++particleIdRef.current,
-          x: e.clientX,
-          y: e.clientY,
-        };
-        
-        setTrailParticles(prev => [...prev.slice(-10), particle]);
-        
-        // Remove particle after animation
-        setTimeout(() => {
-          setTrailParticles(prev => prev.filter(p => p.id !== particle.id));
-        }, 600);
-        
-        rafIdRef.current = null;
-      });
+      // Update position immediately for responsive cursor
+      setPosition({ x: e.clientX, y: e.clientY });
+      setIsVisible(true);
+      
+      // Clear any existing hide timeout
+      clearTimeout(hideTimeout);
+      
+      // Hide cursor after 1 second of no movement
+      hideTimeout = setTimeout(() => {
+        setIsVisible(false);
+      }, 1000);
+      
+      // Create trail particle with unique ID
+      const particle = {
+        id: ++particleIdRef.current,
+        x: e.clientX,
+        y: e.clientY,
+      };
+      
+      setTrailParticles(prev => [...prev.slice(-10), particle]);
+      
+      // Remove particle after animation
+      setTimeout(() => {
+        setTrailParticles(prev => prev.filter(p => p.id !== particle.id));
+      }, 600);
     };
 
     const handleMouseOver = (e: MouseEvent) => {
@@ -66,7 +60,6 @@ export function CustomCursor() {
     window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
-      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
       clearTimeout(scrollTimeout);
       clearTimeout(hideTimeout);
       window.removeEventListener("mousemove", handleMouseMove);
