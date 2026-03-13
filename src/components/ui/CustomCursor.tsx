@@ -12,6 +12,7 @@ export function CustomCursor() {
 
   useEffect(() => {
     let scrollTimeout: NodeJS.Timeout;
+    let hideTimeout: NodeJS.Timeout;
 
     const handleMouseMove = (e: MouseEvent) => {
       // Throttle with requestAnimationFrame
@@ -19,7 +20,15 @@ export function CustomCursor() {
 
       rafIdRef.current = requestAnimationFrame(() => {
         setPosition({ x: e.clientX, y: e.clientY });
-        setIsVisible(false);
+        setIsVisible(true);
+        
+        // Clear any existing hide timeout
+        clearTimeout(hideTimeout);
+        
+        // Hide cursor after 1 second of no movement
+        hideTimeout = setTimeout(() => {
+          setIsVisible(false);
+        }, 1000);
         
         // Create trail particle with unique ID
         const particle = {
@@ -48,6 +57,7 @@ export function CustomCursor() {
     const handleScroll = () => {
       setIsVisible(true);
       clearTimeout(scrollTimeout);
+      clearTimeout(hideTimeout);
       scrollTimeout = setTimeout(() => setIsVisible(false), 150);
     };
 
@@ -58,6 +68,7 @@ export function CustomCursor() {
     return () => {
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
       clearTimeout(scrollTimeout);
+      clearTimeout(hideTimeout);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseover", handleMouseOver);
       window.removeEventListener("scroll", handleScroll);
