@@ -8,6 +8,7 @@ const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   preload: true,
+  fallback: ["system-ui", "arial"],
 });
 
 const spaceGrotesk = Space_Grotesk({
@@ -16,6 +17,7 @@ const spaceGrotesk = Space_Grotesk({
   weight: ["300", "400", "500", "600", "700"],
   display: "swap",
   preload: true,
+  fallback: ["system-ui", "arial"],
 });
 
 export const metadata: Metadata = {
