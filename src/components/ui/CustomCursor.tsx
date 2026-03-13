@@ -1,113 +1,97 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
 export function CustomCursor() {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
-  const [trailParticles, setTrailParticles] = useState<Array<{ id: number; x: number; y: number }>>([]);
-  const particleIdRef = useRef(0);
-  const rafIdRef = useRef<number | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    let scrollTimeout: NodeJS.Timeout;
-    let hideTimeout: NodeJS.Timeout;
+    setIsMounted(true);
+    
+    // Only run on client
+    if (typeof window === "undefined" || window.matchMedia("(pointer: coarse)").matches) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      // Update position immediately for responsive cursor
-      setPosition({ x: e.clientX, y: e.clientY });
-      setIsVisible(true);
-      
-      // Clear any existing hide timeout
-      clearTimeout(hideTimeout);
-      
-      // Hide cursor after 1 second of no movement
-      hideTimeout = setTimeout(() => {
-        setIsVisible(false);
-      }, 1000);
-      
-      // Create trail particle with unique ID
-      const particle = {
-        id: ++particleIdRef.current,
-        x: e.clientX,
-        y: e.clientY,
-      };
-      
-      setTrailParticles(prev => [...prev.slice(-10), particle]);
-      
-      // Remove particle after animation
-      setTimeout(() => {
-        setTrailParticles(prev => prev.filter(p => p.id !== particle.id));
-      }, 600);
+    const updateMousePosition = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+      if (!isVisible) setIsVisible(true);
     };
 
-    const handleMouseOver = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const isInteractive = target.tagName === 'A' || target.tagName === 'BUTTON' || !!target.closest('.interactive');
-      setIsHovering(isInteractive);
+    const handleMouseLeave = () => setIsVisible(false);
+    const handleMouseEnter = () => setIsVisible(true);
+
+    const handleHoverStart = () => setIsHovering(true);
+    const handleHoverEnd = () => setIsHovering(false);
+
+    window.addEventListener("mousemove", updateMousePosition);
+    document.addEventListener("mouseleave", handleMouseLeave);
+    document.addEventListener("mouseenter", handleMouseEnter);
+
+    // Interactive element detection
+    // Add interactivity to elements
+    const setupInteractions = () => {
+      const interactiveElements = document.querySelectorAll(
+        "a, button, input, textarea, select, .interactive, .group"
+      );
+      
+      interactiveElements.forEach((el) => {
+        el.addEventListener("mouseenter", handleHoverStart);
+        el.addEventListener("mouseleave", handleHoverEnd);
+      });
+
+      return interactiveElements;
     };
 
-    const handleScroll = () => {
-      setIsVisible(true);
-      clearTimeout(scrollTimeout);
-      clearTimeout(hideTimeout);
-      scrollTimeout = setTimeout(() => setIsVisible(false), 150);
-    };
+    let elements = setupInteractions();
 
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    window.addEventListener("mouseover", handleMouseOver, { passive: true });
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    // Re-run setup on DOM mutations to catch newly mounted interactive elements
+    const observer = new MutationObserver(() => {
+      elements.forEach(el => {
+        el.removeEventListener("mouseenter", handleHoverStart);
+        el.removeEventListener("mouseleave", handleHoverEnd);
+      });
+      elements = setupInteractions();
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
-      clearTimeout(scrollTimeout);
-      clearTimeout(hideTimeout);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseover", handleMouseOver);
-      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("mousemove", updateMousePosition);
+      document.removeEventListener("mouseleave", handleMouseLeave);
+      document.removeEventListener("mouseenter", handleMouseEnter);
+      
+      elements.forEach((el) => {
+        el.removeEventListener("mouseenter", handleHoverStart);
+        el.removeEventListener("mouseleave", handleHoverEnd);
+      });
+      observer.disconnect();
     };
-  }, []);
+  }, [isVisible]);
+
+  if (typeof window === "undefined" || !isMounted) return null;
 
   return (
     <>
-      {/* Main Cursor Ring with Glow Effect */}
-      <div
-        className={`custom-cursor ${isHovering ? 'hovered' : ''} ${isVisible ? '' : 'hidden'}`}
-        style={{
-          left: `${position.x}px`,
-          top: `${position.y}px`,
+      <motion.div
+        className={`custom-cursor-dot ${!isVisible ? "hidden" : ""}`}
+        animate={{
+          x: mousePosition.x,
+          y: mousePosition.y,
         }}
+        transition={{ type: "tween", ease: "backOut", duration: 0.1 }}
       />
-      
-      {/* Center Dot with Pulse Animation */}
-      <div
-        className="custom-cursor-dot"
-        style={{
-          left: `${position.x}px`,
-          top: `${position.y}px`,
+      <motion.div
+        className={`custom-cursor ${isHovering ? "hovered" : ""} ${!isVisible ? "hidden" : ""}`}
+        animate={{
+          x: mousePosition.x,
+          y: mousePosition.y,
         }}
+        transition={{ type: "tween", ease: "circOut", duration: 0.2 }}
       />
-      
-      {/* Outer Glow Ring */}
-      <div
-        className={`cursor-glow-ring ${isVisible ? '' : 'hidden'}`}
-        style={{
-          left: `${position.x}px`,
-          top: `${position.y}px`,
-        }}
-      />
-      
-      {/* Trail Particles with Fade Animation */}
-      {trailParticles.map((particle) => (
-        <div
-          key={particle.id}
-          className="cursor-trail"
-          style={{
-            left: `${particle.x}px`,
-            top: `${particle.y}px`,
-          }}
-        />
-      ))}
     </>
   );
 }

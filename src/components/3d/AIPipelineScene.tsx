@@ -98,7 +98,6 @@ function AnimatedPipeline() {
             color="#FFFFFF"
             anchorX="center"
             anchorY="middle"
-            font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff2"
           >
             {stage.label}
           </Text>

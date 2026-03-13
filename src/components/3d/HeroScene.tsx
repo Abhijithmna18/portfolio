@@ -26,8 +26,12 @@ function NetworkSphere() {
 
   useFrame((state, delta) => {
     if (ref.current) {
-      ref.current.rotation.y += delta * 0.05;
-      ref.current.rotation.x += delta * 0.02;
+      // Base rotation combined with pointer parallax
+      const targetX = (state.pointer.x * 0.5);
+      const targetY = (state.pointer.y * 0.5);
+      
+      ref.current.rotation.y += delta * 0.05 + (targetX - ref.current.rotation.y) * 0.02;
+      ref.current.rotation.x += delta * 0.02 + (targetY - ref.current.rotation.x) * 0.02;
       
       // Subtle pulse effect
       const time = state.clock.elapsedTime;
@@ -90,6 +94,12 @@ function FloatingParticles() {
     if (ref.current) {
       ref.current.rotation.y -= delta * 0.02;
       
+      // Parallax mouse follow
+      const targetX = (state.pointer.x * 2);
+      const targetY = (state.pointer.y * 2);
+      ref.current.position.x += (targetX - ref.current.position.x) * 0.02;
+      ref.current.position.y += (targetY - ref.current.position.y) * 0.02;
+
       // Gentle floating motion
       const time = state.clock.elapsedTime;
       const positions = ref.current.geometry.attributes.position.array as Float32Array;
@@ -115,13 +125,29 @@ function FloatingParticles() {
   );
 }
 
+function InteractiveLights() {
+  const lightRef = useRef<THREE.PointLight>(null);
+  
+  useFrame((state) => {
+    if (lightRef.current) {
+      const targetX = (state.pointer.x * 8);
+      const targetY = (state.pointer.y * 8);
+      lightRef.current.position.x += (targetX - lightRef.current.position.x) * 0.05;
+      lightRef.current.position.y += (targetY - lightRef.current.position.y) * 0.05;
+    }
+  });
+  
+  return <pointLight ref={lightRef} position={[0, 0, 10]} intensity={1.5} color="#2563EB" />;
+}
+
 export function HeroScene() {
   return (
     <div className="absolute inset-0 z-0 h-full w-full">
       <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
         <color attach="background" args={["#020617"]} />
         <ambientLight intensity={0.5} />
-        <pointLight position={[10, 10, 10]} intensity={1} />
+        <InteractiveLights />
+        <pointLight position={[-10, 10, -10]} intensity={0.5} color="#06B6D4" />
         <NetworkSphere />
         <FloatingParticles />
       </Canvas>
